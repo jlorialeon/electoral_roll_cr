@@ -1,9 +1,12 @@
 {
-    "file":"",
-    "columnsIndex":{
+    "filename":"C:\\dev\\PADRON_COMPLETO.txt",
+    "fileHeaders":{
         "id":0,
-        "name":4,
-        "lastName":5,
-        "secondLastName":6
+        "name":5,
+        "lastName":6,
+        "secondLastName":7
+    },
+    "databaseSettings":{
+        "connection":"mysql://user:jloria:ccA53150@localhost:3306/kleroterion"
     }
 }
