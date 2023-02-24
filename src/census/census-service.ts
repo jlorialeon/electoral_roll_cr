@@ -20,7 +20,7 @@ export default class CesusService {
     async UpdateCensusAsync(): Promise<void> {
 
         this.fileManager.openFile(this.filename);
-        for(let i = 0; i < 10; i++){
+        for(let i = 0; i < 6; i++){
             let row = await this.fileManager.readLine();
             console.log(await this.parseCensusAsync(row));
         }

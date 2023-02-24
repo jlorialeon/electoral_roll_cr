@@ -1,4 +1,5 @@
 import fs from "fs"
+import FileLineBuffer from "./file-buffer";
 
 export default class FileManager{
 
@@ -6,14 +7,14 @@ export default class FileManager{
     private filename:string;
     private fileHandler:number;
     private encoding:BufferEncoding;
-    private linesBuffer:string[] = [];
     private IsOnEOF:boolean = false;
+    private fileLineBuffer:FileLineBuffer;
 
     constructor(){
         this.filename = "";
         this.fileHandler = 0;
         this.encoding = "latin1";
-        this.linesBuffer = [];
+        this.fileLineBuffer = new FileLineBuffer();
     }
 
     openFile(filename:string, encoding:BufferEncoding = "latin1"){
@@ -32,7 +33,7 @@ export default class FileManager{
     }
 
     private clear(){
-        this.linesBuffer = [];
+        this.fileLineBuffer.empty();
     }
 
     async readLine():Promise<string|undefined>{
@@ -57,16 +58,10 @@ export default class FileManager{
             return;
         }
 
-        const isLastLineIncomplete = this.isLastLineIncomplete();
-        let lastLine:string|undefined = "";
-        if(this.linesBuffer.length > 0){
-            lastLine = this.linesBuffer.pop();
-        }
-
         let rawContent = content.content.toString(this.encoding).trimEnd();
-        this.linesBuffer = rawContent.split("\n");
-        if(isLastLineIncomplete && this.linesBuffer.length > 0){
-            this.linesBuffer[0] = lastLine + this.linesBuffer[0];
+        this.fileLineBuffer.fillBuffer(rawContent);
+        if(!this.IsOnEOF && this.fileLineBuffer.isEmpty()){
+            await this.fillBufferAsync();
         }
     }
 
@@ -76,27 +71,16 @@ export default class FileManager{
             return undefined;
         }
 
-        if(this.bufferWasRead() || this.isLastLineIncomplete()){
+        if(this.fileLineBuffer.isEmpty() && !this.IsOnEOF){
             await this.fillBufferAsync();
-        }
+        } 
 
-        if(this.linesBuffer.length == 0){
-            return undefined;
-        }    
-
-        return this.linesBuffer.shift();
+        return this.fileLineBuffer.getLine();
     }
 
-    private bufferWasRead():boolean{
-        return this.linesBuffer.length == 0 && !this.IsOnEOF;
-    }
-
-    private isLastLineIncomplete():boolean{
-        return this.linesBuffer.length > 0 && this.linesBuffer.length == 1 && this.linesBuffer[0].indexOf("\r") == -1 && !this.IsOnEOF;
-    }
 
     private allLinesWereRead():boolean{
-        return this.IsOnEOF && this.linesBuffer.length == 0;
+        return this.fileLineBuffer.isEmpty() && this.IsOnEOF
     }
 
     private async readBytesAsync() :Promise<ReadBytesResult> {
